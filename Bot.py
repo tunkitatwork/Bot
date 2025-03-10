@@ -2,7 +2,7 @@ import logging
 import os
 import sqlite3
 import requests
-import openai
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import asyncio
 from fastapi import FastAPI, Request
 from bs4 import BeautifulSoup
@@ -16,8 +16,7 @@ import googlesearch
 # 🔹 Cấu hình bot
 TOKEN = "7921895980:AAF8DW0r6xqTBFlIx-Lh3DcWueFssbUmjfc"
 WEBHOOK_URL = f"https://bot-cqbh.onrender.com"
-OPENAI_API_KEY = "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"
-openai.api_key = OPENAI_API_KEY
+
 
 # 🔹 Kết nối SQLite
 conn = sqlite3.connect("queries.db", check_same_thread=False)
@@ -100,21 +99,15 @@ def search_google(query):
     except Exception:
         return []
 
-def summarize_with_gpt(content):
-    client = openai.OpenAI()  # ✅ Tạo client mới theo API mới
+def summarize_with_mistral(content):
+    model_name = "mistralai/Mistral-7B-Instruct"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
 
-    prompt = f"Tóm tắt nội dung dưới đây một cách ngắn gọn, dễ hiểu:\n\n{content}"
+    generator = pipeline("text-generation", model=model, tokenizer=tokenizer)
+    summary = generator(f"Tóm tắt thông tin tài chính sau: {content}", max_length=200, do_sample=True)
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "Bạn là chuyên gia tài chính."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=300
-    )
-    
-    return response["choices"][0]["message"]["content"]
+    return summary[0]["generated_text"]
 
 async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Hiển thị khung nhập để người dùng nhập câu hỏi sau khi gõ lệnh."""
@@ -145,7 +138,7 @@ async def handle_stock_query(update: Update, context: ContextTypes.DEFAULT_TYPE)
     title, url, content = search_results[0]
 
     # 🔹 Dùng GPT để tóm tắt và tổng hợp thông tin
-    summary = summarize_with_gpt(content)
+    summary = summarize_with_mistral(content)
 
     response_text = f"📌 **{title}**\n🔗 {url}\n📝 **Tóm tắt:** {summary}"
 
