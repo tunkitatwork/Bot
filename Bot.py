@@ -185,12 +185,17 @@ async def home():
 # 🔹 Chạy FastAPI với uvicorn
 if __name__ == "__main__":
     import uvicorn
-    asyncio.run(set_webhook())  # Thiết lập webhook trước
-    asyncio.run(init_application())  # Khởi tạo bot
-    asyncio.run(app_telegram.run_webhook(
-        listen="0.0.0.0",
-        port=5000,
-        url_path="webhook",
-        webhook_url=WEBHOOK_URL
-    ))  # Chạy webhook để bot nhận lệnh
+
+    async def main():
+        await set_webhook()  # Thiết lập webhook trước
+        await init_application()  # Khởi tạo bot
+        await app_telegram.run_webhook(
+            listen="0.0.0.0",
+            port=5000,
+            url_path="webhook",
+            webhook_url=WEBHOOK_URL
+        )  # Chạy webhook
+
+    asyncio.run(main())  # Chạy tất cả trong 1 event loop
     uvicorn.run(app, host="0.0.0.0", port=5000)
+
