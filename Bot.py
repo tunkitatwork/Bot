@@ -182,20 +182,16 @@ async def set_webhook():
 async def home():
     return {"status": "Bot is running!", "webhook": WEBHOOK_URL}
 
-# 🔹 Chạy FastAPI với uvicorn
 if __name__ == "__main__":
     import uvicorn
 
     async def main():
         await set_webhook()  # Thiết lập webhook trước
         await init_application()  # Khởi tạo bot
-        await app_telegram.run_webhook(
-            listen="0.0.0.0",
-            port=5000,
-            url_path="webhook",
-            webhook_url=WEBHOOK_URL
-        )  # Chạy webhook
-
-    asyncio.run(main())  # Chạy tất cả trong 1 event loop
+        await app_telegram.start()  # Bắt đầu bot Telegram
+    
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())  # Chạy bot mà không bị lỗi event loop
     uvicorn.run(app, host="0.0.0.0", port=5000)
+
 
