@@ -114,7 +114,7 @@ async def webhook(request: Request):
     return {"status": "Webhook received"}
 
 # 🔹 Route kiểm tra bot có chạy không
-@app.get("/")
+@app.get("/", methods=["GET", "HEAD"])
 async def home():
     return {"status": "Bot is running!", "webhook": WEBHOOK_URL}
 
