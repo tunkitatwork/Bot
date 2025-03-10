@@ -165,7 +165,7 @@ async def webhook_info():
 @app.post("/webhook")
 async def webhook(request: Request):
     update = Update.de_json(await request.json(), bot)
-    app_telegram.process_update(update)
+    await app_telegram.process_update(update)  # ✅ Thêm await
     return {"status": "Webhook received"}
 
 
