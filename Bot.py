@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import asyncio
 
-WEBHOOK_URL = "https://your-server.com/webhook"  # Thay bằng URL server của bạn
+WEBHOOK_URL = "https://bot-cqbh.onrender.com"  # Thay bằng URL server của bạn
 
 # 🔹 Cấu hình bot Telegram
 TELEGRAM_TOKEN = "7921895980:AAF8DW0r6xqTBFlIx-Lh3DcWueFssbUmjfc"
@@ -17,14 +17,12 @@ TELEGRAM_TOKEN = "7921895980:AAF8DW0r6xqTBFlIx-Lh3DcWueFssbUmjfc"
 OPENAI_API_KEY = "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"
 openai.api_key = OPENAI_API_KEY
 
-# 🔹 Cấu hình logging
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
+# 🔹 Cấu hình FastAPI
+app = FastAPI()
 
 # 🔹 Kết nối SQLite
 conn = sqlite3.connect("queries.db", check_same_thread=False)
 cursor = conn.cursor()
-
-# Tạo bảng nếu chưa có
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS queries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,21 +34,27 @@ CREATE TABLE IF NOT EXISTS queries (
 ''')
 conn.commit()
 
-# 🔹 Hàm lưu câu hỏi và phản hồi vào SQLite
+# 🔹 Hàm lưu câu hỏi vào database
 def save_query(user_id, query_text, response_text):
+    conn = sqlite3.connect("queries.db")  
+    cursor = conn.cursor()
     cursor.execute(
         "INSERT OR IGNORE INTO queries (user_id, query_text, response_text) VALUES (?, ?, ?)",
         (user_id, query_text, response_text),
     )
     conn.commit()
+    conn.close()  
 
-# 🔹 Hàm kiểm tra câu hỏi đã tồn tại chưa
+# 🔹 Hàm kiểm tra dữ liệu đã có chưa
 def check_existing_query(query_text):
+    conn = sqlite3.connect("queries.db")
+    cursor = conn.cursor()
     cursor.execute(
         "SELECT response_text FROM queries WHERE query_text = ? ORDER BY created_at DESC LIMIT 1",
         (query_text,),
     )
     result = cursor.fetchone()
+    conn.close()
     return result[0] if result else None
 
 # 🔹 Hàm tìm kiếm Google
@@ -96,8 +100,6 @@ def summarize_text(text):
 
 # 🔹 Hàm xử lý lệnh /stocksearch
 async def stock_search(update: Update, context: CallbackContext) -> None:
-    print(f"📩 Nhận lệnh từ {update.message.chat.username}: {update.message.text}")
-
     if not context.args:
         await update.message.reply_text("❗ Vui lòng nhập câu hỏi về chứng khoán!")
         return
@@ -105,27 +107,22 @@ async def stock_search(update: Update, context: CallbackContext) -> None:
     query = " ".join(context.args)
     user_id = update.message.chat_id
 
-    # Kiểm tra xem câu hỏi đã có trong database chưa
     existing_response = check_existing_query(query)
     if existing_response:
-        print("✅ Trả lời từ database.")
         await update.message.reply_text(f"✅ **Dữ liệu đã có:**\n{existing_response}")
         return
 
-    print("🔍 Đang tìm kiếm thông tin trên Google...")
     await update.message.reply_text("🔍 Đang tìm kiếm thông tin...")
 
-    # Tìm kiếm Google
+    # 🔹 Tìm kiếm Google
     search_results = search_google(query)
     if not search_results:
         await update.message.reply_text("⚠ Không tìm thấy thông tin phù hợp.")
         return
 
     title, url = search_results[0]
-    print(f"📌 Lấy nội dung từ: {url}")
-
     content = extract_content(url)
-    
+
     if content:
         await update.message.reply_text(f"📌 **Bài viết:** {title}\n🔗 {url}\n⏳ Đang tóm tắt thông tin...")
         summary = summarize_text(content)
@@ -133,29 +130,31 @@ async def stock_search(update: Update, context: CallbackContext) -> None:
 
         # Lưu vào database
         save_query(user_id, query, response_text)
-        print("✅ Đã lưu vào database.")
 
         await update.message.reply_text(response_text)
     else:
         await update.message.reply_text(f"Không thể lấy nội dung từ {url}")
 
+# 🔹 Khởi tạo bot Telegram
+bot = Bot(token=TELEGRAM_TOKEN)
+app_telegram = Application.builder().token(TELEGRAM_TOKEN).build()
+app_telegram.add_handler(CommandHandler("stocksearch", stock_search))
 
-# 🔹 Chạy bot Telegram
-async def main():
-    print("🚀 Đang khởi động bot Telegram...")
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
+# 🔹 Webhook xử lý dữ liệu từ Telegram
+@app.post("/webhook")
+async def webhook(request: Request):
+    update = Update.de_json(await request.json(), bot)
+    app_telegram.process_update(update)
+    return {"status": "ok"}
 
-    print("✅ Thêm command handler...")
-    app.add_handler(CommandHandler("stocksearch", stock_search))
+# 🔹 Lệnh thiết lập webhook (chạy 1 lần)
+async def set_webhook():
+    await bot.set_webhook(WEBHOOK_URL)
+    print(f"✅ Webhook đã được thiết lập: {WEBHOOK_URL}")
 
-    print("🤖 Bot đang chạy, chờ tin nhắn...")
-    await app.run_polling()
-
+# 🔹 Chạy FastAPI với uvicorn
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    
-    if loop.is_running():
-        print("⚠ Event loop đã chạy, dùng create_task() thay vì run().")
-        loop.create_task(main())  # Dùng create_task() nếu loop đã chạy
-    else:
-        loop.run_until_complete(main())  # Chạy bình thường nếu loop chưa chạy
+    import uvicorn
+
+    asyncio.run(set_webhook())  # Thiết lập webhook
+    uvicorn.run(app, host="0.0.0.0", port=5000)
