@@ -11,7 +11,7 @@ from telegram.ext import Application, CommandHandler, CallbackContext
 import uvicorn
 
 
-WEBHOOK_URL = "https://bot-cqbh.onrender.com"  # Thay bằng URL server của bạn
+WEBHOOK_URL = "https://bot-cqbh.onrender.com/webhook"  # Thay bằng URL server của bạn
 
 # 🔹 Cấu hình bot Telegram
 TELEGRAM_TOKEN = "7921895980:AAF8DW0r6xqTBFlIx-Lh3DcWueFssbUmjfc"
@@ -162,12 +162,17 @@ app_telegram.add_handler(CommandHandler("help", help_command))
 async def webhook(request: Request):
     update = Update.de_json(await request.json(), bot)
     app_telegram.process_update(update)
-    return {"status": "ok"}
+    return {"status": "Webhook received"}
+
 
 # 🔹 Lệnh thiết lập webhook (chạy 1 lần)
 async def set_webhook():
     await bot.set_webhook(WEBHOOK_URL)
     print(f"✅ Webhook đã được thiết lập: {WEBHOOK_URL}")
+
+@app.get("/")
+async def home():
+    return {"status": "Bot is running!", "webhook": WEBHOOK_URL}
 
 # 🔹 Chạy FastAPI với uvicorn
 if __name__ == "__main__":
