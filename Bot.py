@@ -101,15 +101,16 @@ def search_google(query):
         return []
 
 def summarize_with_gpt(content):
-    prompt = (
-        "Dựa trên thông tin sau đây, tổng hợp các thông tin cần thiết cho tôi:\n\n"
-        f"{content}"
-    )
-    
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI()  # ✅ Tạo client mới theo API mới
+
+    prompt = f"Tóm tắt nội dung dưới đây một cách ngắn gọn, dễ hiểu:\n\n{content}"
+
+    response = client.chat.completions.create(
         model="gpt-4",
-        messages=[{"role": "system", "content": "Bạn là chuyên gia phân tích tài chính."},
-                  {"role": "user", "content": prompt}],
+        messages=[
+            {"role": "system", "content": "Bạn là chuyên gia tài chính."},
+            {"role": "user", "content": prompt}
+        ],
         max_tokens=300
     )
     
