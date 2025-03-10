@@ -1,8 +1,9 @@
 fastapi
 uvicorn
-python-telegram-bot
+python-telegram-bot[webhooks]
 requests
 beautifulsoup4
 newspaper3k
 openai
 lxml_html_clean
+
