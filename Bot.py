@@ -154,6 +154,11 @@ async def stock_search(update: Update, context: CallbackContext) -> None:
 # 🔹 Khởi tạo bot Telegram
 bot = Bot(token=TELEGRAM_TOKEN)
 app_telegram = Application.builder().token(TELEGRAM_TOKEN).build()
+async def init_application():
+    await app_telegram.initialize()
+    await app_telegram.start()
+    await app_telegram.updater.start_polling()
+
 app_telegram.add_handler(CommandHandler("stocksearch", stock_search))
 app_telegram.add_handler(CommandHandler("help", help_command))
 
@@ -181,6 +186,5 @@ async def home():
 # 🔹 Chạy FastAPI với uvicorn
 if __name__ == "__main__":
     import uvicorn
-
-    asyncio.run(set_webhook())  # Thiết lập webhook
+    asyncio.run(init_application())  # Chạy hàm khởi tạo trước khi bắt đầu bot
     uvicorn.run(app, host="0.0.0.0", port=5000)
