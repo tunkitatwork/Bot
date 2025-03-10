@@ -16,7 +16,7 @@ import googlesearch
 # 🔹 Cấu hình bot
 TOKEN = "7921895980:AAF8DW0r6xqTBFlIx-Lh3DcWueFssbUmjfc"
 WEBHOOK_URL = f"https://bot-cqbh.onrender.com"
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 openai.api_key = OPENAI_API_KEY
 
 # 🔹 Kết nối SQLite
