@@ -1,4 +1,5 @@
 import logging
+import os
 import sqlite3
 import requests
 import openai
@@ -10,9 +11,10 @@ from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import uvicorn
 
-WEBHOOK_URL = "https://bot-cqbh.onrender.com/webhook"  # Thay bằng URL server của bạn
-TELEGRAM_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
+# 🔹 Cấu hình bot
+TOKEN = "7921895980:AAF8DW0r6xqTBFlIx-Lh3DcWueFssbUmjfc"
+WEBHOOK_URL = f"https://bot-cqbh.onrender.com"
+OPENAI_API_KEY = "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"
 openai.api_key = OPENAI_API_KEY
 
 # 🔹 Cấu hình FastAPI
@@ -93,27 +95,28 @@ async def stock_search(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(response_text)
 
 # 🔹 Khởi tạo bot Telegram
-bot = Bot(token=TELEGRAM_TOKEN)
-app_telegram = Application.builder().token(TELEGRAM_TOKEN).build()
+bot = Bot(token=TOKEN)
+application = Application.builder().token(TOKEN).build()
 
 # 🔹 Hàm khởi tạo bot trước khi chạy webhook
 async def init_bot():
-    await app_telegram.initialize()
-    await app_telegram.start()
+    await application.initialize()
+    await application.start()
 
-# 🔹 Thêm các lệnh vào bot
-app_telegram.add_handler(CommandHandler("stocksearch", stock_search))
-app_telegram.add_handler(CommandHandler("help", help_command))
+# 🔹 Đăng ký handler
+application.add_handler(CommandHandler("stocksearch", stock_search))
+application.add_handler(CommandHandler("help", help_command))
 
 # 🔹 Webhook xử lý dữ liệu từ Telegram
 @app.post("/webhook")
 async def webhook(request: Request):
     update = Update.de_json(await request.json(), bot)
 
-    if not app_telegram.bot:
-        await init_bot()  # Đảm bảo bot được khởi tạo trước khi xử lý update
+    # Kiểm tra nếu bot chưa được khởi tạo, thì khởi tạo trước
+    if not application._initialized:
+        await init_bot()
 
-    await app_telegram.process_update(update)
+    await application.process_update(update)
     return {"status": "Webhook received"}
 
 # 🔹 Route kiểm tra webhook hoạt động
@@ -131,14 +134,27 @@ async def set_webhook():
     await bot.set_webhook(WEBHOOK_URL)
     print(f"✅ Webhook đã được thiết lập: {WEBHOOK_URL}")
 
-# 🔹 Chạy FastAPI với Uvicorn
-if __name__ == "__main__":
-    import uvicorn
+# 🔹 Chạy webhook trong `main()`
+def main():
+    # Lấy cổng từ biến môi trường hoặc sử dụng cổng mặc định
+    port = int(os.getenv("PORT", 8080))
+    print(f"🚀 Đang sử dụng cổng: {port}")  # Log kiểm tra cổng
 
-    async def main():
-        await set_webhook()  # Thiết lập webhook trước
-        await init_bot()  # Khởi tạo bot
+    async def start_services():
+        await init_bot()
+        await set_webhook()
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=port,
+            webhook_url=WEBHOOK_URL
+        )
 
     loop = asyncio.get_event_loop()
-    loop.create_task(main())  # Chạy bot mà không bị lỗi event loop
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    loop.create_task(start_services())  # Chạy bot Telegram song song với webhook
+
+    # Chạy FastAPI với Uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+# 🔹 Chạy `main()` khi script được khởi động
+if __name__ == "__main__":
+    main()
