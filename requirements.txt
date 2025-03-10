@@ -7,3 +7,4 @@ newspaper3k
 openai
 lxml_html_clean
 python-telegram-bot[webhooks]
+googlesearch-python
