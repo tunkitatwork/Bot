@@ -98,6 +98,10 @@ application.add_handler(CommandHandler("help", help_command))
 
 # 🔹 Chạy bot bằng polling (không dùng webhook)
 def main():
+# Lấy cổng từ biến môi trường hoặc sử dụng cổng mặc định
+    port = int(os.getenv("PORT", 8080))
+    print(f"Đang sử dụng cổng: {port}")  # Log kiểm tra cổng
+    
     print("🤖 Bot đang chạy bằng polling...")
     application.run_polling()
 
