@@ -114,11 +114,12 @@ def summarize_with_gpt(content):
     return response["choices"][0]["message"]["content"]
 
 async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not context.args:
+    if " " not in update.message.text:
         await update.message.reply_text("❗ Vui lòng nhập câu hỏi về chứng khoán!")
         return
 
-    query = " ".join(context.args)
+    query = update.message.text.split("/stocksearch ", 1)[1]
+
     user_id = update.message.chat_id
 
     existing_response = check_existing_query(query)
@@ -146,6 +147,7 @@ async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     save_query(user_id, query, response_text)
 
     await update.message.reply_text(response_text)
+
 
 
 async def set_webhook(application: Application):
