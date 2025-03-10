@@ -7,7 +7,7 @@ import asyncio
 from fastapi import FastAPI, Request
 from bs4 import BeautifulSoup
 from newspaper import Article
-from telegram import Bot, Update
+from telegram import ForceReply, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 import googlesearch
 
@@ -114,17 +114,20 @@ def summarize_with_gpt(content):
     return response["choices"][0]["message"]["content"]
 
 async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if " " not in update.message.text:
-        await update.message.reply_text("❗ Vui lòng nhập câu hỏi về chứng khoán!")
-        return
+    """Hiển thị khung nhập để người dùng nhập câu hỏi sau khi gõ lệnh."""
+    
+    await update.message.reply_text(
+        "🔍 Vui lòng nhập câu hỏi về chứng khoán:",
+        reply_markup=ForceReply(selective=True)  # Tạo khung nhập câu hỏi
+    )
 
-    query = update.message.text.split("/stocksearch ", 1)[1]
-
+async def handle_stock_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Xử lý câu hỏi sau khi người dùng nhập vào."""
+    query = update.message.text.strip()
     user_id = update.message.chat_id
 
-    existing_response = check_existing_query(query)
-    if existing_response:
-        await update.message.reply_text(f"✅ **Dữ liệu đã có:**\n{existing_response}")
+    if not query:
+        await update.message.reply_text("❗ Bạn chưa nhập câu hỏi!")
         return
 
     await update.message.reply_text(f"🔍 Đang tìm kiếm thông tin về: {query}...")
@@ -143,11 +146,8 @@ async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     response_text = f"📌 **{title}**\n🔗 {url}\n📝 **Tóm tắt:** {summary}"
 
-    # 🔹 Lưu vào database
-    save_query(user_id, query, response_text)
-
+    # 🔹 Gửi kết quả cho người dùng
     await update.message.reply_text(response_text)
-
 
 
 async def set_webhook(application: Application):
@@ -165,6 +165,7 @@ def main():
     # Đăng ký các handler
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stocksearch", stock_search))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_stock_query))
     application.add_handler(CommandHandler("help", help_command))
 
 
