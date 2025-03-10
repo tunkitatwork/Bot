@@ -4,7 +4,7 @@ python-telegram-bot
 requests
 beautifulsoup4
 newspaper3k
-openai
+transformers
 lxml_html_clean
 python-telegram-bot[webhooks]
 googlesearch-python
