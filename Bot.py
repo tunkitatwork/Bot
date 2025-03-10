@@ -118,6 +118,10 @@ async def webhook(request: Request):
 async def home():
     return {"status": "Bot is running!", "webhook": WEBHOOK_URL}
 
+@app.get("/webhook", methods=["GET", "HEAD"])
+async def webhook_info():
+    return {"status": "Webhook is active"}
+    
 # 🔹 Lệnh thiết lập webhook
 async def set_webhook():
     await bot.set_webhook(WEBHOOK_URL)
