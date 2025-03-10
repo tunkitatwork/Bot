@@ -8,9 +8,7 @@ from fastapi import FastAPI, Request
 from bs4 import BeautifulSoup
 from newspaper import Article
 from telegram import Bot, Update
-from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler, CallbackContext
-)
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 import uvicorn
 
 # 🔹 Cấu hình bot
