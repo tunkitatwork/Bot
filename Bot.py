@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from newspaper import Article
 from telegram import Bot, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
-import uvicorn
+import googlesearch
 
 # 🔹 Cấu hình bot
 TOKEN = "7921895980:AAF8DW0r6xqTBFlIx-Lh3DcWueFssbUmjfc"
@@ -86,6 +86,33 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 """
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
+def search_google(query):
+    try:
+        search_results = []
+        for url in googlesearch.search(query + " site:cafef.vn OR site:vietstock.vn", num_results=3):
+            article = Article(url)
+            article.download()
+            article.parse()
+            search_results.append((article.title, url, article.text[:2000]))  # Giới hạn nội dung 2000 ký tự
+        return search_results
+    except Exception:
+        return []
+
+def summarize_with_gpt(content):
+    prompt = (
+        "Dựa trên thông tin sau đây, tổng hợp các thông tin cần thiết cho tôi:\n\n"
+        f"{content}"
+    )
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": "Bạn là chuyên gia phân tích tài chính."},
+                  {"role": "user", "content": prompt}],
+        max_tokens=300
+    )
+    
+    return response["choices"][0]["message"]["content"]
+
 async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
         await update.message.reply_text("❗ Vui lòng nhập câu hỏi về chứng khoán!")
@@ -99,15 +126,27 @@ async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await update.message.reply_text(f"✅ **Dữ liệu đã có:**\n{existing_response}")
         return
 
-    await update.message.reply_text("🔍 Đang tìm kiếm thông tin...")
+    await update.message.reply_text(f"🔍 Đang tìm kiếm thông tin về: {query}...")
 
-    # 🔹 Gọi API tìm kiếm ở đây
-    response_text = "🔹 Đây là dữ liệu chứng khoán tìm được."
+    # 🔹 Gọi API tìm kiếm Google
+    search_results = search_google(query)
+    if not search_results:
+        await update.message.reply_text("⚠ Không tìm thấy thông tin phù hợp!")
+        return
 
-    # Lưu vào database
+    # 🔹 Lấy nội dung từ kết quả tìm kiếm đầu tiên
+    title, url, content = search_results[0]
+
+    # 🔹 Dùng GPT để tóm tắt và tổng hợp thông tin
+    summary = summarize_with_gpt(content)
+
+    response_text = f"📌 **{title}**\n🔗 {url}\n📝 **Tóm tắt:** {summary}"
+
+    # 🔹 Lưu vào database
     save_query(user_id, query, response_text)
 
     await update.message.reply_text(response_text)
+
 
 async def set_webhook(application: Application):
     """Thiết lập Webhook."""
