@@ -74,7 +74,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "Gõ /trending để xem top 15 trend coin."
     )
 
-async def help_command(update: Update, context: CallbackContext) -> None:
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     help_text = """
 🤖 **Danh sách lệnh có sẵn:**
 /help - Hiển thị danh sách lệnh và hướng dẫn sử dụng.
@@ -86,7 +86,7 @@ async def help_command(update: Update, context: CallbackContext) -> None:
 """
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
-async def stock_search(update: Update, context: CallbackContext) -> None:
+async def stock_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
         await update.message.reply_text("❗ Vui lòng nhập câu hỏi về chứng khoán!")
         return
@@ -108,9 +108,6 @@ async def stock_search(update: Update, context: CallbackContext) -> None:
     save_query(user_id, query, response_text)
 
     await update.message.reply_text(response_text)
-
-async def button(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text("🔘 Bạn đã nhấn nút!")
 
 async def set_webhook(application: Application):
     """Thiết lập Webhook."""
