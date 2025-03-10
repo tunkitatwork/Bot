@@ -100,7 +100,7 @@ def search_google(query):
         return []
 
 def summarize_with_mistral(content):
-    model_name = "mistralai/Mistral-7B-Instruct"
+    model_name = "mistralai/Mistral-7B-Instruct-v0.3"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(model_name)
 
