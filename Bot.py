@@ -19,10 +19,6 @@ WEBHOOK_URL = f"https://bot-cqbh.onrender.com"
 OPENAI_API_KEY = "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"
 openai.api_key = OPENAI_API_KEY
 
-
-# 🔹 Cấu hình FastAPI
-app = FastAPI()
-
 # 🔹 Kết nối SQLite
 conn = sqlite3.connect("queries.db", check_same_thread=False)
 cursor = conn.cursor()
@@ -77,77 +73,40 @@ async def list10(update: Update, context: CallbackContext) -> None:
 async def button(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("🔘 Bạn đã nhấn nút!")
 
-# 🔹 Khởi tạo bot Telegram
-bot = Bot(token=TOKEN)
-application = Application.builder().token(TOKEN).build()
+async def set_webhook(application: Application):
+    """Thiết lập Webhook."""
+    await application.bot.set_webhook(WEBHOOK_URL)
 
-# 🔹 Hàm khởi tạo bot trước khi chạy webhook
-async def init_bot():
-    await application.initialize()
-    await application.start()
-
-# 🔹 Đăng ký handler
-application.add_handler(CommandHandler("start", start))
-application.add_handler(CommandHandler("chart", chart))
-application.add_handler(CommandHandler("signal", signal))
-application.add_handler(CommandHandler("top", top))
-application.add_handler(CommandHandler("list", list_signals))
-application.add_handler(CommandHandler("smarttrade", current_price))
-application.add_handler(CommandHandler("info", info))
-application.add_handler(CallbackQueryHandler(button))
-application.add_handler(CommandHandler("heatmap", heatmap))
-application.add_handler(CommandHandler("desc", desc))
-application.add_handler(CommandHandler("sentiment", sentiment))
-application.add_handler(CommandHandler("trending", trending))
-application.add_handler(CommandHandler("list10", list10))
-
-# 🔹 Webhook xử lý dữ liệu từ Telegram
-@app.post("/webhook")
-async def webhook(request: Request):
-    update = Update.de_json(await request.json(), bot)
-
-    # Kiểm tra nếu bot chưa được khởi tạo, thì khởi tạo trước
-    if not application._initialized:
-        await init_bot()
-
-    await application.process_update(update)
-    return {"status": "Webhook received"}
-
-# 🔹 Route kiểm tra bot có chạy không
-@app.get("/", methods=["GET", "HEAD"])
-async def home():
-    return {"status": "Bot is running!", "webhook": WEBHOOK_URL}
-
-@app.get("/webhook", methods=["GET", "HEAD"])
-async def webhook_info():
-    return {"status": "Webhook is active"}
-    
-# 🔹 Lệnh thiết lập webhook
-async def set_webhook():
-    await bot.set_webhook(WEBHOOK_URL)
-    print(f"✅ Webhook đã được thiết lập: {WEBHOOK_URL}")
-
-# 🔹 Chạy bot bằng webhook
 def main():
     # Lấy cổng từ biến môi trường hoặc sử dụng cổng mặc định
     port = int(os.getenv("PORT", 8080))
-    print(f"🚀 Đang sử dụng cổng: {port}")  # Log kiểm tra cổng
+    print(f"Đang sử dụng cổng: {port}")  # Log kiểm tra cổng
 
-    async def start_services():
-        await init_bot()
-        await set_webhook()
-        application.run_webhook(
-            listen="0.0.0.0",
-            port=port,
-            webhook_url=WEBHOOK_URL
-        )
+    # Khởi tạo ứng dụng Telegram bot
+    application = Application.builder().token(TOKEN).build()
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(start_services())  # Chạy bot Telegram song song với webhook
+    # Đăng ký các handler
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("chart", chart))
+    application.add_handler(CommandHandler("signal", signal))
+    application.add_handler(CommandHandler("top", top))  # Thêm handler cho /top
+    application.add_handler(CommandHandler("list", list_signals))
+    application.add_handler(CommandHandler("smarttrade", current_price))  # Thêm handler cho /cap
+    application.add_handler(CommandHandler("info", info))
+    application.add_handler(CallbackQueryHandler(button))  # Thêm handler cho nút bấm từ /top
+    application.add_handler(CommandHandler("heatmap", heatmap))
+    application.add_handler(CommandHandler("desc", desc))
+    application.add_handler(CommandHandler("sentiment", sentiment))
+    application.add_handler(CommandHandler("trending", trending))
+    application.add_handler(CommandHandler("list10", list10))
 
-    # Chạy FastAPI với Uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=port)
 
-# 🔹 Chạy `main()` khi script được khởi động
-if __name__ == "__main__":
+    # Chạy webhook
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=port,
+        webhook_url=WEBHOOK_URL
+    )
+
+if _name_ == "_main_":
     main()
