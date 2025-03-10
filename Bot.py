@@ -99,6 +99,19 @@ def summarize_text(text):
     )
     return response["choices"][0]["message"]["content"]
 
+# 🔹 Hàm xử lý lệnh /help
+async def help_command(update: Update, context: CallbackContext) -> None:
+    help_text = """
+🤖 **Danh sách lệnh có sẵn:**
+/help - Hiển thị danh sách lệnh và hướng dẫn sử dụng.
+/stocksearch <câu hỏi> - Tìm kiếm thông tin chứng khoán và tóm tắt bằng AI.
+/start - Bắt đầu bot, kiểm tra kết nối.
+
+📌 **Ví dụ:**
+`/stocksearch VN-Index hôm nay thế nào?`
+"""
+    await update.message.reply_text(help_text, parse_mode="Markdown")
+    
 # 🔹 Hàm xử lý lệnh /stocksearch
 async def stock_search(update: Update, context: CallbackContext) -> None:
     if not context.args:
@@ -140,6 +153,7 @@ async def stock_search(update: Update, context: CallbackContext) -> None:
 bot = Bot(token=TELEGRAM_TOKEN)
 app_telegram = Application.builder().token(TELEGRAM_TOKEN).build()
 app_telegram.add_handler(CommandHandler("stocksearch", stock_search))
+app_telegram.add_handler(CommandHandler("help", help_command))
 
 # 🔹 Webhook xử lý dữ liệu từ Telegram
 @app.post("/webhook")
