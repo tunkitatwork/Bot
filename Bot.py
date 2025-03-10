@@ -158,6 +158,10 @@ app_telegram.add_handler(CommandHandler("stocksearch", stock_search))
 app_telegram.add_handler(CommandHandler("help", help_command))
 
 # 🔹 Webhook xử lý dữ liệu từ Telegram
+@app.get("/webhook")
+async def webhook_info():
+    return {"status": "Webhook is active"}
+    
 @app.post("/webhook")
 async def webhook(request: Request):
     update = Update.de_json(await request.json(), bot)
