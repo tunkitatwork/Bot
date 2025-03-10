@@ -7,8 +7,10 @@ import asyncio
 from fastapi import FastAPI, Request
 from bs4 import BeautifulSoup
 from newspaper import Article
-from telegram import ForceReply, Update
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram import Update, ForceReply
+from telegram.ext import (
+    Application, CommandHandler, MessageHandler, CallbackContext, ContextTypes, filters
+)
 import googlesearch
 
 # 🔹 Cấu hình bot
