@@ -7,6 +7,7 @@ from newspaper import Article
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 import asyncio
+from fastapi import FastAPI
 
 WEBHOOK_URL = "https://bot-cqbh.onrender.com"  # Thay bằng URL server của bạn
 
