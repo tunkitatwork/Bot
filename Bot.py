@@ -2,12 +2,14 @@ import logging
 import sqlite3
 import requests
 import openai
+import asyncio
+from fastapi import FastAPI, Request
 from bs4 import BeautifulSoup
 from newspaper import Article
-from telegram import Update
+from telegram import Bot, Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-import asyncio
-from fastapi import FastAPI
+import uvicorn
+
 
 WEBHOOK_URL = "https://bot-cqbh.onrender.com"  # Thay bằng URL server của bạn
 
